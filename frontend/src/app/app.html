@@ -1,0 +1,662 @@
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">I</div>
+      <div>
+        <h2>InternHub</h2>
+        <p>MANAGEMENT PORTAL</p>
+      </div>
+    </div>
+
+    <p class="menu-label">MAIN MENU</p>
+
+    <nav class="sidebar-menu">
+      <button
+        class="menu-item"
+        [class.active]="currentPage === 'Dashboard'"
+        (click)="navigateTo('Dashboard')">
+        <span>▦</span> Dashboard
+      </button>
+
+      <button
+        class="menu-item"
+        [class.active]="currentPage === 'Interns'"
+        (click)="navigateTo('Interns')">
+        <span>♙</span> Interns
+      </button>
+
+      <button
+        class="menu-item"
+        [class.active]="currentPage === 'Batches'"
+        (click)="navigateTo('Batches')">
+        <span>▤</span> Batches
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="footer-icon">✓</div>
+      <div>
+        <strong>Intern Management</strong>
+        <small>Administration Portal</small>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- =====================================
+         INTERNS PAGE
+    ====================================== -->
+    @if (currentPage === 'Interns') {
+      <header class="top-header">
+        <div>
+          <p class="welcome-label">MANAGEMENT</p>
+          <h1>Interns</h1>
+          <p class="subtitle">Register and manage intern records.</p>
+        </div>
+
+        <button class="primary-button" (click)="toggleInternForm()">
+          {{ showInternForm ? '✕ Close Form' : '+ Add Intern' }}
+        </button>
+      </header>
+
+      <!-- REGISTRATION / EDIT FORM -->
+      @if (showInternForm) {
+        <section class="management-card registration-card">
+          <h2>{{ editingInternId ? 'Edit Intern Details' : 'Register New Intern' }}</h2>
+          <p class="subtitle">Enter the intern details below.</p>
+
+          @if (successMessage) {
+            <p class="success-message">{{ successMessage }}</p>
+          }
+
+          @if (errorMessage) {
+            <p class="error-message">{{ errorMessage }}</p>
+          }
+
+          <form [formGroup]="internForm" (ngSubmit)="submitInternForm()">
+            <div class="registration-grid">
+
+              <div class="form-field">
+                <label for="name">Full Name</label>
+                <input
+                  id="name"
+                  type="text"
+                  formControlName="name"
+                  placeholder="Enter full name">
+
+                @if (
+                  internForm.controls['name'].touched &&
+                  internForm.controls['name'].invalid
+                ) {
+                  <small class="field-error">
+                    Enter a name with at least 2 characters.
+                  </small>
+                }
+              </div>
+
+              <div class="form-field">
+                <label for="email">Email Address</label>
+                <input
+                  id="email"
+                  type="email"
+                  formControlName="email"
+                  placeholder="example@email.com">
+
+                @if (
+                  internForm.controls['email'].touched &&
+                  internForm.controls['email'].invalid
+                ) {
+                  <small class="field-error">
+                    Enter a valid email address.
+                  </small>
+                }
+              </div>
+
+              <div class="form-field">
+                <label for="mobileNumber">Mobile Number</label>
+                <input
+                  id="mobileNumber"
+                  type="tel"
+                  formControlName="mobileNumber"
+                  maxlength="10"
+                  placeholder="10-digit mobile number">
+
+                @if (
+                  internForm.controls['mobileNumber'].touched &&
+                  internForm.controls['mobileNumber'].invalid
+                ) {
+                  <small class="field-error">
+                    Enter a valid 10-digit Indian mobile number.
+                  </small>
+                }
+              </div>
+
+              <div class="form-field">
+                <label for="idCardType">ID Card Type</label>
+                <select id="idCardType" formControlName="idCardType">
+                  <option value="FREE">FREE</option>
+                  <option value="PREMIUM">PREMIUM</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="dateOfJoining">Date of Joining</label>
+                <input
+                  id="dateOfJoining"
+                  type="date"
+                  formControlName="dateOfJoining">
+
+                @if (
+                  internForm.controls['dateOfJoining'].touched &&
+                  internForm.controls['dateOfJoining'].invalid
+                ) {
+                  <small class="field-error">Select a joining date.</small>
+                }
+              </div>
+
+              <div class="form-field">
+                <label for="batchId">Select Batch</label>
+                <select id="batchId" formControlName="batchId">
+                  <option value="" disabled>
+                    {{ isLoadingBatches ? 'Loading batches...' : 'Select a batch' }}
+                  </option>
+
+                  @for (batch of batches; track batch.id) {
+                    <option [value]="batch.id">
+                      Batch #{{ batch.id }} |
+                      {{ batch.startDate }} to {{ batch.endDate }}
+                      ({{ batch.totalInterns }} interns)
+                    </option>
+                  }
+                </select>
+
+                @if (
+                  internForm.get('batchId')?.touched &&
+                  internForm.get('batchId')?.invalid
+                ) {
+                  <small class="field-error">Please select a batch.</small>
+                }
+
+                @if (!isLoadingBatches && batches.length === 0) {
+                  <small class="field-error">
+                    No batches available. Please create a batch first.
+                  </small>
+                }
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                class="primary-button"
+                type="submit"
+                [disabled]="isSubmitting">
+                {{ isSubmitting ? (editingInternId ? 'Updating...' : 'Registering...') : (editingInternId ? 'Update Intern' : 'Register Intern') }}
+              </button>
+
+              <button
+                class="secondary-button"
+                type="button"
+                (click)="toggleInternForm()">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
+      }
+
+      <!-- INTERN RECORDS -->
+      <section class="management-card intern-records-section">
+        <div class="records-header">
+          <div>
+            <div class="management-icon blue">♙</div>
+            <h3>Intern Records</h3>
+            <p class="subtitle">View and manage registered interns.</p>
+          </div>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="loadInterns()"
+            [disabled]="isLoadingInterns">
+            {{ isLoadingInterns ? 'Refreshing...' : '↻ Refresh' }}
+          </button>
+        </div>
+
+        @if (recordsError) {
+          <p class="error-message">{{ recordsError }}</p>
+        }
+
+        <div class="records-filters">
+          <input
+            type="text"
+            placeholder="Search name, email, or intern ID"
+            [(ngModel)]="searchName">
+
+          <select [(ngModel)]="filterBatchId">
+            <option value="">All batches</option>
+            @for (batch of batches; track batch.id) {
+              <option [value]="batch.id">Batch #{{ batch.id }}</option>
+            }
+          </select>
+
+          <select [(ngModel)]="filterIdCardType">
+            <option value="">All ID card types</option>
+            <option value="FREE">FREE</option>
+            <option value="PREMIUM">PREMIUM</option>
+          </select>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="clearFilters()">
+            Clear
+          </button>
+        </div>
+
+        @if (isLoadingInterns) {
+          <p class="records-message">Loading intern records...</p>
+        } @else if (recordsError) {
+          <div class="records-empty">
+            <h3>Unable to load records</h3>
+            <p>Please check your backend connection and try again.</p>
+            <button
+              type="button"
+              class="primary-button"
+              (click)="loadInterns()">
+              Retry
+            </button>
+          </div>
+        } @else if (filteredInterns.length === 0) {
+          <div class="records-empty">
+            <div class="management-icon blue">♙</div>
+            <h3>No interns found</h3>
+            <p>
+              @if (interns.length === 0) {
+                No interns are registered yet. Click Add Intern to register one.
+              } @else {
+                No interns match your current search or filters.
+              }
+            </p>
+          </div>
+        } @else {
+          <div class="records-table-wrapper">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Intern ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Mobile</th>
+                  <th>ID Card</th>
+                  <th>Joining Date</th>
+                  <th>Batch</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                @for (intern of filteredInterns; track intern.internId) {
+                  <tr>
+                    <td>
+                      <strong>{{ intern.internId }}</strong>
+                    </td>
+
+                    <td>{{ intern.name }}</td>
+
+                    <td>{{ intern.email }}</td>
+
+                    <td>{{ intern.mobileNumber }}</td>
+
+                    <td>
+                      <span
+                        class="id-type-badge"
+                        [class.premium-badge]="intern.idCardType === 'PREMIUM'">
+                        {{ intern.idCardType }}
+                      </span>
+                    </td>
+
+                    <td>{{ intern.dateOfJoining }}</td>
+
+                    <td>
+                      <strong>Batch #{{ intern.batchId }}</strong>
+                      <small class="batch-dates">
+                        {{ intern.batchStartDate }} to {{ intern.batchEndDate }}
+                      </small>
+                    </td>
+
+                    <!-- EDIT / DELETE ACTIONS -->
+                    <td>
+                      <div class="intern-actions">
+                        <button
+                          type="button"
+                          class="edit-button"
+                          (click)="editIntern(intern)"
+                          title="Edit intern"
+                          aria-label="Edit intern">
+                          ✏️ Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          class="delete-button"
+                          (click)="deleteIntern(intern)"
+                          title="Delete intern"
+                          aria-label="Delete intern">
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+
+    <!-- =====================================
+         BATCHES PAGE
+    ====================================== -->
+    @else if (currentPage === 'Batches') {
+      <header class="top-header">
+        <div>
+          <p class="welcome-label">MANAGEMENT</p>
+          <h1>Batches</h1>
+          <p class="subtitle">
+            Create and manage six-month internship batches.
+          </p>
+        </div>
+
+        <button class="primary-button" (click)="toggleBatchForm()">
+          {{ showBatchForm ? '✕ Close Form' : '+ Create Batch' }}
+        </button>
+      </header>
+
+      <!-- CREATE BATCH FORM -->
+      @if (showBatchForm) {
+        <section class="management-card">
+          <h2>Create New Batch</h2>
+          <p class="subtitle">
+            Choose a start date. The backend calculates the end date six months later.
+          </p>
+
+          @if (batchError) {
+            <p class="error-message">{{ batchError }}</p>
+          }
+
+          @if (batchSuccess) {
+            <p class="success-message">{{ batchSuccess }}</p>
+          }
+
+          <form [formGroup]="batchForm" (ngSubmit)="createBatch()">
+            <div class="form-field">
+              <label for="batchStartDate">Batch Start Date</label>
+              <input
+                id="batchStartDate"
+                type="date"
+                formControlName="startDate"
+                required>
+
+              @if (
+                batchForm.get('startDate')?.touched &&
+                batchForm.get('startDate')?.invalid
+              ) {
+                <small class="field-error">Please select a start date.</small>
+              }
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="submit"
+                class="primary-button"
+                [disabled]="isCreatingBatch">
+                {{ isCreatingBatch ? 'Creating...' : 'Create Batch' }}
+              </button>
+
+              <button
+                type="button"
+                class="secondary-button"
+                (click)="toggleBatchForm()">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
+      }
+
+      @if (batchRecordsError) {
+        <p class="error-message">{{ batchRecordsError }}</p>
+      }
+
+      <!-- BATCH RECORDS -->
+      <section class="management-card">
+        <div class="records-header">
+          <div>
+            <div class="management-icon purple">▤</div>
+            <h3>Batch Records</h3>
+            <p class="subtitle">Available batches and their enrollment.</p>
+          </div>
+
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="loadBatches()"
+            [disabled]="isLoadingBatches">
+            {{ isLoadingBatches ? 'Refreshing...' : '↻ Refresh' }}
+          </button>
+        </div>
+
+        @if (isLoadingBatches) {
+          <p class="records-message">Loading batches...</p>
+        } @else if (batches.length === 0) {
+          <div class="records-empty">
+            <h3>No batches found</h3>
+            <p>Create your first batch to get started.</p>
+          </div>
+        } @else {
+          <div class="records-table-wrapper">
+            <table class="records-table">
+              <thead>
+                <tr>
+                  <th>Batch ID</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
+                  <th>Total Interns</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                @for (batch of batches; track batch.id) {
+                  <tr>
+                    <td><strong>Batch #{{ batch.id }}</strong></td>
+                    <td>{{ batch.startDate }}</td>
+                    <td>{{ batch.endDate }}</td>
+                    <td>{{ batch.totalInterns }}</td>
+                    <td>
+                      <button
+                        type="button"
+                        class="secondary-button"
+                        (click)="viewBatchDetails(batch.id)">
+                        View Interns
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <!-- SELECTED BATCH DETAILS -->
+      @if (selectedBatchId !== null) {
+        <section class="management-card">
+          <div class="records-header">
+            <div>
+              <h3>Batch #{{ selectedBatchId }} — Interns</h3>
+              <p class="subtitle">Interns assigned to this batch.</p>
+            </div>
+
+            <button
+              type="button"
+              class="secondary-button"
+              (click)="closeBatchDetails()">
+              Close
+            </button>
+          </div>
+
+          @if (batchRecordsError) {
+            <p class="error-message">{{ batchRecordsError }}</p>
+          } @else if (isLoadingBatchDetails) {
+            <p class="records-message">Loading batch details...</p>
+          } @else if (selectedBatchDetails) {
+            <p>
+              Total interns:
+              <strong>{{ selectedBatchDetails.totalInterns }}</strong>
+            </p>
+
+            @if (selectedBatchDetails.interns.length === 0) {
+              <p>No interns are assigned to this batch yet.</p>
+            } @else {
+              <div class="records-table-wrapper">
+                <table class="records-table">
+                  <thead>
+                    <tr>
+                      <th>Intern ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Mobile</th>
+                      <th>ID Card</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    @for (
+                      intern of selectedBatchDetails.interns;
+                      track intern.internId
+                    ) {
+                      <tr>
+                        <td>{{ intern.internId }}</td>
+                        <td>{{ intern.name }}</td>
+                        <td>{{ intern.email }}</td>
+                        <td>{{ intern.mobileNumber }}</td>
+                        <td>{{ intern.idCardType }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+        </section>
+      }
+    }
+
+    <!-- =====================================
+         DASHBOARD PAGE
+    ====================================== -->
+    @else {
+      <header class="top-header">
+        <div>
+          <p class="welcome-label">OVERVIEW</p>
+          <h1>Dashboard</h1>
+          <p class="subtitle">
+            Welcome to your Intern Management System.
+          </p>
+        </div>
+
+        <div class="admin-profile">
+          <div class="avatar">A</div>
+          <div>
+            <strong>Administrator</strong>
+            <small>System Admin</small>
+          </div>
+        </div>
+      </header>
+
+      <!-- DASHBOARD STATISTICS -->
+      <section class="stats-grid">
+        <article class="stat-card">
+          <div class="stat-icon blue">♙</div>
+          <p>Total Interns</p>
+          <h2>{{ totalInterns }}</h2>
+          <small>Registered interns</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon purple">▤</div>
+          <p>Total Batches</p>
+          <h2>{{ totalBatches }}</h2>
+          <small>Created batches</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon green">✓</div>
+          <p>Premium ID Cards</p>
+          <h2>{{ premiumInterns }}</h2>
+          <small>Premium registrations</small>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon orange">○</div>
+          <p>Free ID Cards</p>
+          <h2>{{ freeInterns }}</h2>
+          <small>Free registrations</small>
+        </article>
+      </section>
+
+      <!-- WELCOME PANEL -->
+      <section class="welcome-panel">
+        <div>
+          <p class="welcome-label">GET STARTED</p>
+          <h2>Manage your interns efficiently</h2>
+          <p>
+            Create batches, register interns, and keep their
+            information organized in one place.
+          </p>
+        </div>
+
+        <div class="welcome-illustration">👥</div>
+      </section>
+
+      <!-- MANAGEMENT CARDS -->
+      <section class="management-grid">
+        <article class="management-card">
+          <div class="management-icon blue">♙</div>
+          <h3>Intern Management</h3>
+          <p>
+            Register interns, assign batches, search records,
+            and update intern details.
+          </p>
+
+          <button
+            class="primary-button"
+            (click)="navigateTo('Interns')">
+            Manage Interns →
+          </button>
+        </article>
+
+        <article class="management-card">
+          <div class="management-icon purple">▤</div>
+          <h3>Batch Management</h3>
+          <p>
+            Create six-month batches, view assigned interns,
+            and monitor batch enrollment.
+          </p>
+
+          <button
+            class="primary-button"
+            (click)="navigateTo('Batches')">
+            Manage Batches →
+          </button>
+        </article>
+      </section>
+    }
+
+  </main>
+</div>
