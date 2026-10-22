@@ -59,3 +59,16 @@ npm start
 ## Security
 
 Never commit database passwords, API keys, or other secrets to GitHub.
+## Screenshots
+
+### InternHub Application
+
+![InternHub Screenshot 1](screenshots/Screenshot%202026-10-22%20163444.png)
+
+![InternHub Screenshot 2](screenshots/Screenshot%202026-10-22%20163456.png)
+
+![InternHub Screenshot 3](screenshots/Screenshot%202026-10-22%20163505.png)
+
+![InternHub Screenshot 4](screenshots/Screenshot%202026-10-22%20163524.png)
+
+![InternHub Screenshot 5](screenshots/Screenshot%202026-10-22%20163530.png)
